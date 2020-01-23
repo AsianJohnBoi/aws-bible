@@ -4,7 +4,7 @@
 
 A full-stack application consists of a front (client-side) and a back end (server-side) which can both be served from a single EC2 instance. Both ends can be separated and used in two different services. An S3 bucket for serving the front-end application and an EC2 instance for serving the back-end. 
 
-In this guide we will be deploying a VueJS and NodeJS application. 
+In this guide we will be deploying a full-stack application that was built with VueJS and NodeJS. VueJS app served from an S3 bucket and executing HTTP requests to the NodeJS server running on an EC2 instance. This concept can be applied to other Javascript frameworks. 
 
 ### Prerequisites
 
@@ -84,12 +84,54 @@ Domain name
 
    iii. Review and launch.
 
-2. Copy and launch server-side application on EC2.
+2. Add a static ip address to the instance.
 
-### Proxy client-side requests to server-side application
+   i. Click 'Elastic IPs' on the left hand side.
 
-1. 
+   ii. Allocate Elastic IP address
+
+   iii. Associate Elastic IP address to the instance.
+
+   iv. Add private IP address.
+
+   v. Associate
+
+3. Copy and launch server-side application on EC2.
+
+### Reverse proxy
+
+A reverse proxy is required in order for the EC2 instance to proxy the client-side requests to the server. NGINX will be used to proxy the requests.
+
+1. Install NGINX `sudo apt install nginx`
+
+2. Edit `sudo /etc/nginx/sites-available/default` and add the following underneath the server
+
+3. ```
+   location / {
+                   # First attempt to serve request as file, then
+                   # as directory, then fall back to displaying a 404.
+                   # try_files $uri $uri/ =404;
+                   proxy_pass http://localhost:3000;
+                   proxy_set_header X-Real-IP $remote_addr;
+                   proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
+                   proxy_set_header X-NginX-Proxy true;
+                   proxy_ssl_session_reuse off;
+                   proxy_set_header Host $http_host;
+                   proxy_redirect off;
+           }
+   ```
+
+   
+
+4. Install certbot to obtain an SSL certificate. Redirect HTTP requests to HTTPS. Use the domain name and the EC2 instance ip address.
+
+5. Server is ready to go. NodeJS endpoints can be tested with postman. 
+
+   
 
 ### DNS Configuration
 
-1. 
+1. Add new record. E.g. server.mydomain.com
+2. Select type A - IPv4 Address
+3. Enter the public ip address of the created EC2 instance in the value box. 
+4. Leave everything else by default.
