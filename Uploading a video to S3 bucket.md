@@ -133,9 +133,11 @@ All requests (authenticating, running CRUD with db, etc) should always be handle
 
 The following is a guide for setting up a new API endpoint for the client-side to request a temporary signed URL for uploading a video file. Here we create a new endpoint `/signed` accepting POST requests. 
 
-1. Install the AWS SDK `npm i aws sdk --save`
+1. Install the AWS SDK `npm i aws-sdk --save`
 
-2. Update aws account config.
+2. Import the aws-sdk library
+
+3. Update aws account config.
 
    ```
    AWS.config.update({
@@ -146,15 +148,15 @@ The following is a guide for setting up a new API endpoint for the client-side t
 
    
 
-3. Create a new S3 object from the AWS class.
+4. Create a new S3 object from the AWS class.
 
    `var s3 = new AWS.S3()`
 
-4. Create a POST endpoint:
+5. Create a POST endpoint:
 
    `router.post('/signed', async (req, res) => {}`
 
-5. Set parameters
+6. Set parameters
 
    ```
    var params = {
@@ -165,7 +167,7 @@ The following is a guide for setting up a new API endpoint for the client-side t
        };
    ```
 
-6. Call the `getSignedUrl` method to get a signedurl.
+7. Call the `getSignedUrl` method to get a signedurl.
 
    ```
    await s3.getSignedUrl('putObject', params, function (err, data) {
@@ -220,4 +222,53 @@ router.post('/signed', async (req, res) => {
 
 ### Client-Side
 
-1. 
+A HTTP client is needed to retrieve a signed url from the `/signed` endpoint. We will use `axios` to do so.
+
+1. Install axios `npm install axios --save`
+
+2. Import the axios library.
+
+3. Set the parameters
+
+   ```
+   let params = {
+           data: this.recorder.getBlob(),
+           id: new Date().getTime()
+         };
+   ```
+
+4. Call the endpoint with axios
+
+   ```
+   axios({
+             method: "POST",
+             url: "api/signed",
+             data: {
+               objectName: `${this.videoId}.${params.data.type.split("/")[1]}`,
+               mimeType: this.file.type
+             }
+           })
+           .then((response) => {}) # Response contains signedURL
+           .catch(() => {})
+   ```
+
+5. Use the signed URL from the response to upload to the S3 bucket.
+
+   ```
+   axios({
+             method: "PUT",
+             headers: {
+               "Content-Type": "video/webm"
+             },
+             url: <thereturnedsignedURL>,
+             data: params.data
+           })
+             .then(() => {
+   			console.log('success!')
+             })
+             .catch(error => {
+               console.log(error);
+             });
+   ```
+
+6. Check the S3 bucket for the video.
